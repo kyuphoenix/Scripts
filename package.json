@@ -1,0 +1,21 @@
+{
+  "name": "singbox-installer-service",
+  "version": "1.0.0",
+  "description": "sing-box Hysteria 2 / TUIC v5 动态多协议多系统脚本分发与在线服务",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "sing-box",
+    "hysteria2",
+    "tuic",
+    "alpine",
+    "debian",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}
