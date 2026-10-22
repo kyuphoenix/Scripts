@@ -1,10 +1,11 @@
 # ---------- 3. 安装与配置 acme.sh 自动化证书环境 ----------
 ui_step "2/6" "配置 acme.sh 自动化证书环境 (匿名注册)..."
-if [ ! -f /root/.acme.sh/acme.sh ]; then
+ACME_DIR="${HOME:-/root}/.acme.sh"
+if [ ! -f "$ACME_DIR/acme.sh" ]; then
     ui_info "正在在线安装 acme.sh..."
     curl -sSL https://get.acme.sh | sh
 fi
-ACME_BIN="/root/.acme.sh/acme.sh"
+ACME_BIN="$ACME_DIR/acme.sh"
 
 ui_info "设置证书颁发机构为 Let's Encrypt 并匿名注册账号..."
 "$ACME_BIN" --set-default-ca --server letsencrypt

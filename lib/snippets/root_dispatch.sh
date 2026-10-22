@@ -176,7 +176,7 @@ fi
 printf "  ${C_BOLD}认证密码          :${C_RESET} ${C_CYAN}%s${C_RESET}\n" "${PASSWORD}"
 printf "  ${C_BOLD}SNI 伪装域名      :${C_RESET} ${C_CYAN}%s${C_RESET}\n" "${USER_DOMAIN}"
 printf "  ${C_BOLD}ALPN              :${C_RESET} ${C_CYAN}h3${C_RESET}\n"
-printf "  ${C_BOLD}操作系统与架构    :${C_RESET} ${C_GRAY}%s (%s)%${C_RESET}\n" "${OS_DESC}" "${ARCH}"
+printf "  ${C_BOLD}操作系统与架构    :${C_RESET} ${C_GRAY}%s (%s)${C_RESET}\n" "${OS_DESC}" "${ARCH}"
 printf "${C_CYAN}----------------------------------------------------------${C_RESET}\n"
 
 if [ "$PROTO_NAME" = "hy2" ]; then

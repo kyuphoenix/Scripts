@@ -1,12 +1,6 @@
 #!/bin/sh
 set -e
 
-# ---------- 终端与环境自适应初始化 ----------
-# 若通过管道执行 (如 curl | sh)，重新将标准输入重定向到当前终端以支持交互输入
-if [ ! -t 0 ] && [ -r /dev/tty ]; then
-    exec < /dev/tty
-fi
-
 # 终端 ANSI 颜色定义 (兼容 POSIX sh / BusyBox ash)
 if [ -t 1 ]; then
     C_RESET="\033[0m"
@@ -35,10 +29,27 @@ CERT_DIR="/etc/sing-box/cert"
 WORK_DIR="/root/sb_download_cache"
 
 # 异常退出与清理 Trap
-cleanup() {
+on_exit() {
     rm -rf "$WORK_DIR" 2>/dev/null || true
 }
-trap cleanup EXIT INT TERM
+
+on_interrupt() {
+    on_exit
+    printf "\n${C_RED}❌ 用户已取消操作，安装退出。${C_RESET}\n" >&2
+    exit 130
+}
+
+trap on_exit EXIT
+trap on_interrupt INT TERM
+
+# 安全的交互输入读取函数 (支持直接运行或 curl 管道直连，绝不篡改标准输入流)
+ui_read() {
+    if [ -r /dev/tty ]; then
+        read -r "$@" < /dev/tty
+    else
+        read -r "$@"
+    fi
+}
 
 # 交互式输出辅助函数
 ui_banner() {
