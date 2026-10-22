@@ -80,3 +80,47 @@ ui_warn() {
 ui_error() {
     printf "  ${C_RED}❌ %s${C_RESET}\n" "$1"
 }
+
+# ---------- 探测系统已有历史配置与证书 ----------
+detect_existing() {
+    EXIST_DOMAIN=""
+    HAS_VALID_CERT=0
+    CERT_FILE="$CERT_DIR/server.crt"
+    KEY_FILE="$CERT_DIR/server.key"
+
+    # 1. 探测已有有效证书
+    if [ -s "$CERT_FILE" ] && [ -s "$KEY_FILE" ]; then
+        if command -v openssl >/dev/null 2>&1; then
+            if openssl x509 -checkend 86400 -noout -in "$CERT_FILE" >/dev/null 2>&1; then
+                EXIST_DOMAIN=$(openssl x509 -noout -text -in "$CERT_FILE" 2>/dev/null | grep -oE "DNS:[^ ,]+" | head -n 1 | cut -d: -f2 || true)
+                if [ -n "$EXIST_DOMAIN" ]; then
+                    HAS_VALID_CERT=1
+                fi
+            fi
+        fi
+    fi
+
+    # 2. 探测现有 sing-box 配置文件中的历史参数
+    EXIST_PORT=""
+    EXIST_PASS=""
+    EXIST_UUID=""
+    if [ -f "$CONF_DIR/config.json" ]; then
+        if [ -z "$EXIST_DOMAIN" ]; then
+            EXIST_DOMAIN=$(grep -oE '"server_name": *"[^"]+"' "$CONF_DIR/config.json" 2>/dev/null | head -n 1 | cut -d'"' -f4 || true)
+        fi
+        EXIST_PORT=$(grep -oE '"listen_port": *[0-9]+' "$CONF_DIR/config.json" 2>/dev/null | head -n 1 | awk '{print $NF}' || true)
+        EXIST_PASS=$(grep -oE '"password": *"[^"]+"' "$CONF_DIR/config.json" 2>/dev/null | head -n 1 | cut -d'"' -f4 || true)
+        EXIST_UUID=$(grep -oE '"uuid": *"[^"]+"' "$CONF_DIR/config.json" 2>/dev/null | head -n 1 | cut -d'"' -f4 || true)
+    fi
+
+    # 3. 探测 acme.sh 已经保存的 Cloudflare 凭据
+    ACME_CONF="${HOME:-/root}/.acme.sh/account.conf"
+    SAVED_CF_TOKEN=""
+    SAVED_CF_KEY=""
+    SAVED_CF_EMAIL=""
+    if [ -f "$ACME_CONF" ]; then
+        SAVED_CF_TOKEN=$(grep -E "^(SAVED_)?CF_Token=" "$ACME_CONF" 2>/dev/null | head -n 1 | cut -d"'" -f2 | tr -d '"' || true)
+        SAVED_CF_KEY=$(grep -E "^(SAVED_)?CF_Key=" "$ACME_CONF" 2>/dev/null | head -n 1 | cut -d"'" -f2 | tr -d '"' || true)
+        SAVED_CF_EMAIL=$(grep -E "^(SAVED_)?CF_Email=" "$ACME_CONF" 2>/dev/null | head -n 1 | cut -d"'" -f2 | tr -d '"' || true)
+    fi
+}
