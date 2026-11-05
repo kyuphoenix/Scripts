@@ -123,4 +123,15 @@ detect_existing() {
         SAVED_CF_KEY=$(grep -E "^(SAVED_)?CF_Key=" "$ACME_CONF" 2>/dev/null | head -n 1 | cut -d"'" -f2 | tr -d '"' || true)
         SAVED_CF_EMAIL=$(grep -E "^(SAVED_)?CF_Email=" "$ACME_CONF" 2>/dev/null | head -n 1 | cut -d"'" -f2 | tr -d '"' || true)
     fi
+
+    # 4. 探测已持久化的 Reality 密钥与配置
+    EXIST_REALITY_PRIVKEY=""
+    EXIST_REALITY_PUBKEY=""
+    EXIST_REALITY_SHORT_ID=""
+    if [ -f "/etc/sing-box/reality.key" ]; then
+        . "/etc/sing-box/reality.key" 2>/dev/null || true
+        EXIST_REALITY_PRIVKEY="${REALITY_PRIVKEY}"
+        EXIST_REALITY_PUBKEY="${REALITY_PUBKEY}"
+        EXIST_REALITY_SHORT_ID="${REALITY_SHORT_ID}"
+    fi
 }

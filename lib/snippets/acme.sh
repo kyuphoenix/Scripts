@@ -50,7 +50,7 @@ if [ "$SKIP_CERT_ISSUE" -ne 1 ]; then
         "$ACME_BIN" --issue --dns dns_cf -d "$USER_DOMAIN" --force
     fi
 
-    RELOAD_CMD="${RELOAD_CMD:-rc-service sing-box restart 2>/dev/null || systemctl restart sing-box 2>/dev/null || true}"
+    RELOAD_CMD="${RELOAD_CMD:-rc-service sing-box restart 2>/dev/null; rc-service nginx reload 2>/dev/null; systemctl restart sing-box 2>/dev/null; systemctl reload nginx 2>/dev/null || true}"
 
     ui_info "安装证书至 ${CERT_DIR}..."
     "$ACME_BIN" --install-cert -d "$USER_DOMAIN" \

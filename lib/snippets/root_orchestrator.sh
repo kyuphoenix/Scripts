@@ -8,10 +8,12 @@ printf "${C_BOLD}📝 请选择部署协议与配置参数：${C_RESET}\n\n"
 
 # 1. 协议选择
 printf " ${C_BOLD}请选择要部署的节点协议：${C_RESET}\n"
-printf "  ${C_CYAN}1)${C_RESET} Hysteria 2 ${C_GRAY}(推荐，超高速 UDP 代理)${C_RESET}\n"
-printf "  ${C_CYAN}2)${C_RESET} TUIC v5    ${C_GRAY}(基于 QUIC 协议的高性能代理)${C_RESET}\n"
+printf "  ${C_CYAN}1)${C_RESET} Hysteria 2     ${C_GRAY}(推荐，超高速 UDP 代理)${C_RESET}\n"
+printf "  ${C_CYAN}2)${C_RESET} TUIC v5        ${C_GRAY}(基于 QUIC 协议的高性能代理)${C_RESET}\n"
+printf "  ${C_CYAN}3)${C_RESET} AnyTLS         ${C_GRAY}(抗 TLS-in-TLS 审查的高性能 TCP 代理)${C_RESET}\n"
+printf "  ${C_CYAN}4)${C_RESET} VLESS Reality  ${C_GRAY}(偷自己证书 + Nginx 静态网页回落伪装)${C_RESET}\n"
 while true; do
-    printf " ${C_CYAN}?${C_RESET} 请输入选项 [1-2] ${C_GRAY}[默认: 1]${C_RESET}: "
+    printf " ${C_CYAN}?${C_RESET} 请输入选项 [1-4] ${C_GRAY}[默认: 1]${C_RESET}: "
     ui_read PROTO_CHOICE
     PROTO_CHOICE=$(echo "$PROTO_CHOICE" | tr -d '[:space:]')
     PROTO_CHOICE="${PROTO_CHOICE:-1}"
@@ -23,8 +25,16 @@ while true; do
         PROTO_NAME="tuic"
         PROTO_TITLE="TUIC v5"
         break
+    elif [ "$PROTO_CHOICE" = "3" ]; then
+        PROTO_NAME="anytls"
+        PROTO_TITLE="AnyTLS"
+        break
+    elif [ "$PROTO_CHOICE" = "4" ]; then
+        PROTO_NAME="vless_reality"
+        PROTO_TITLE="VLESS + Reality"
+        break
     fi
-    ui_warn "选项无效，请输入 1 或 2！"
+    ui_warn "选项无效，请输入 1-4！"
 done
 
 # 2. 域名输入与已有证书复用判断
@@ -134,8 +144,13 @@ if [ "$SKIP_CF_INPUT" -ne 1 ]; then
     fi
 fi
 
-# 4. 端口输入与校验 (优先建议已有端口或 20000)
-DEF_PORT="${EXIST_PORT:-20000}"
+# 4. 端口输入与校验 (优先使用已有端口，Reality/AnyTLS 默认 443，其余默认 20000)
+if [ "$PROTO_NAME" = "anytls" ] || [ "$PROTO_NAME" = "vless_reality" ]; then
+    DEF_PORT="${EXIST_PORT:-443}"
+else
+    DEF_PORT="${EXIST_PORT:-20000}"
+fi
+
 while true; do
     printf " ${C_CYAN}?${C_RESET} 请输入监听端口 ${C_GRAY}[默认: %s]${C_RESET}: " "$DEF_PORT"
     ui_read INPUT_PORT
@@ -157,8 +172,8 @@ while true; do
     esac
 done
 
-# 5. TUIC 协议专属 UUID (优先复用已有 UUID)
-if [ "$PROTO_NAME" = "tuic" ]; then
+# 5. TUIC / VLESS Reality 协议 UUID (优先复用已有 UUID)
+if [ "$PROTO_NAME" = "tuic" ] || [ "$PROTO_NAME" = "vless_reality" ]; then
     if [ -n "$EXIST_UUID" ]; then
         GEN_UUID="$EXIST_UUID"
     else
@@ -182,16 +197,18 @@ if [ "$PROTO_NAME" = "tuic" ]; then
     USER_UUID="${INPUT_UUID:-$GEN_UUID}"
 fi
 
-# 6. 连接密码输入 (优先建议已有密码或随机生成)
-if [ -n "$EXIST_PASS" ]; then
-    GEN_PASS="$EXIST_PASS"
-else
-    GEN_PASS=$(tr -dc 'a-zA-Z0-9' < /dev/urandom 2>/dev/null | head -c 16 || echo "Pass$(date +%s)")
+# 6. 连接密码输入 (仅 hy2, tuic, anytls 需要密码)
+if [ "$PROTO_NAME" != "vless_reality" ]; then
+    if [ -n "$EXIST_PASS" ]; then
+        GEN_PASS="$EXIST_PASS"
+    else
+        GEN_PASS=$(tr -dc 'a-zA-Z0-9' < /dev/urandom 2>/dev/null | head -c 16 || echo "Pass$(date +%s)")
+    fi
+    printf " ${C_CYAN}?${C_RESET} 请输入连接密码 ${C_GRAY}[回车使用: %s]${C_RESET}: " "$GEN_PASS"
+    ui_read INPUT_PASS
+    INPUT_PASS=$(echo "$INPUT_PASS" | tr -d '[:space:]')
+    PASSWORD="${INPUT_PASS:-$GEN_PASS}"
 fi
-printf " ${C_CYAN}?${C_RESET} 请输入连接密码 ${C_GRAY}[回车使用: %s]${C_RESET}: " "$GEN_PASS"
-ui_read INPUT_PASS
-INPUT_PASS=$(echo "$INPUT_PASS" | tr -d '[:space:]')
-PASSWORD="${INPUT_PASS:-$GEN_PASS}"
 
 # 7. 架构与操作系统检测
 ARCH=$(uname -m)
@@ -206,12 +223,12 @@ if [ -f /etc/alpine-release ] || command -v apk >/dev/null 2>&1; then
     OS_TYPE="alpine"
     OS_DESC="Alpine Linux (musl + OpenRC)"
     SB_TARGET="musl"
-    RELOAD_CMD="rc-service sing-box restart 2>/dev/null || true"
+    RELOAD_CMD="rc-service sing-box restart 2>/dev/null; rc-service nginx reload 2>/dev/null || true"
 elif [ -f /etc/debian_version ] || grep -qi "debian\|ubuntu" /etc/os-release 2>/dev/null || command -v apt-get >/dev/null 2>&1; then
     OS_TYPE="debian"
     OS_DESC="Debian / Ubuntu (glibc + Systemd)"
     SB_TARGET="glibc"
-    RELOAD_CMD="systemctl restart sing-box 2>/dev/null || true"
+    RELOAD_CMD="systemctl restart sing-box 2>/dev/null; systemctl reload nginx 2>/dev/null || true"
 else
     ui_error "未能识别的 Linux 发行版，当前脚本仅支持 Alpine 和 Debian/Ubuntu 系统！"
     exit 1
@@ -231,10 +248,15 @@ else
     printf "  ${C_BOLD}CF 认证方式${C_RESET} : ${C_GREEN}API Token${C_RESET}\n"
 fi
 printf "  ${C_BOLD}监 听 端 口${C_RESET} : ${C_GREEN}%s${C_RESET}\n" "$PORT"
-if [ "$PROTO_NAME" = "tuic" ]; then
+if [ "$PROTO_NAME" = "tuic" ] || [ "$PROTO_NAME" = "vless_reality" ]; then
     printf "  ${C_BOLD}用 户 UUID${C_RESET}  : ${C_GREEN}%s${C_RESET}\n" "$USER_UUID"
 fi
-printf "  ${C_BOLD}认 证 密 码${C_RESET} : ${C_GREEN}%s${C_RESET}\n" "$PASSWORD"
+if [ "$PROTO_NAME" != "vless_reality" ]; then
+    printf "  ${C_BOLD}认 证 密 码${C_RESET} : ${C_GREEN}%s${C_RESET}\n" "$PASSWORD"
+else
+    printf "  ${C_BOLD}回 落 伪 装${C_RESET} : ${C_GREEN}Nginx 本地挂载 margin 静态网站 (127.0.0.1:8443)${C_RESET}\n"
+    printf "  ${C_BOLD}Reality 密钥${C_RESET}: ${C_GREEN}sing-box 自动生成/复用已持久化密钥对${C_RESET}\n"
+fi
 printf "${C_BOLD}${C_CYAN}----------------------------------------------------${C_RESET}\n"
 printf "按 ${C_BOLD}[Enter]${C_RESET} 开始自动化部署，或按 ${C_BOLD}[Ctrl+C]${C_RESET} 取消退出..."
 ui_read CONFIRM_CONTINUE || true
