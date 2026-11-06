@@ -12,12 +12,14 @@
 ## 路由规范
 
 - **命令行访问 (`curl`/`wget`)**：
-  - `curl -fsSL https://<domain>/ | sh`：全功能交互式引导安装（协议选择 + 系统与架构自检测 + 历史配置复用）
+  - `curl -fsSL https://<domain>/ | sh`：全功能交互式引导安装（协议选择 + 系统与架构自检测 + 历史配置复用 + 彻底卸载清理选项）
+  - `curl -fsSL https://<domain>/uninstall | sh`：**一键完全卸载与环境清除**（停止并删除服务/配置/证书/静态网页，卸载 Nginx/acme.sh/辅助依赖包）
   - `curl -fsSL https://<domain>/<id> | sh`：对应系统的专属免检测脚本：
     - `/debian-hy2` / `/alpine-hy2`
     - `/debian-tuic` / `/alpine-tuic`
     - `/debian-anytls` / `/alpine-anytls`
     - `/debian-vless-reality` / `/alpine-vless-reality`
+    - `/uninstall`
 - **浏览器访问**：
   - `GET /`：显示 `Scripts` 脚本列表及一键复制
   - `GET /<id>`：显示对应脚本的源码及复制

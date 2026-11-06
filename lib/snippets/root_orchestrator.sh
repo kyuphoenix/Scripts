@@ -8,12 +8,13 @@ printf "${C_BOLD}📝 请选择部署协议与配置参数：${C_RESET}\n\n"
 
 # 1. 协议选择
 printf " ${C_BOLD}请选择要部署的节点协议：${C_RESET}\n"
-printf "  ${C_CYAN}1)${C_RESET} Hysteria 2     ${C_GRAY}(推荐，超高速 UDP 代理)${C_RESET}\n"
-printf "  ${C_CYAN}2)${C_RESET} TUIC v5        ${C_GRAY}(基于 QUIC 协议的高性能代理)${C_RESET}\n"
-printf "  ${C_CYAN}3)${C_RESET} AnyTLS         ${C_GRAY}(抗 TLS-in-TLS 审查的高性能 TCP 代理)${C_RESET}\n"
-printf "  ${C_CYAN}4)${C_RESET} VLESS Reality  ${C_GRAY}(偷自己证书 + Nginx 静态网页回落伪装)${C_RESET}\n"
+printf "  ${C_CYAN}1)${C_RESET} Hysteria 2         ${C_GRAY}(推荐，超高速 UDP 代理)${C_RESET}\n"
+printf "  ${C_CYAN}2)${C_RESET} TUIC v5            ${C_GRAY}(基于 QUIC 协议的高性能代理)${C_RESET}\n"
+printf "  ${C_CYAN}3)${C_RESET} AnyTLS             ${C_GRAY}(抗 TLS-in-TLS 审查的高性能 TCP 代理)${C_RESET}\n"
+printf "  ${C_CYAN}4)${C_RESET} VLESS Reality      ${C_GRAY}(偷自己证书 + Nginx 静态网页回落伪装)${C_RESET}\n"
+printf "  ${C_CYAN}5)${C_RESET} 完全卸载与清除环境 ${C_GRAY}(停止并删除服务、配置、证书、卸载Nginx)${C_RESET}\n"
 while true; do
-    printf " ${C_CYAN}?${C_RESET} 请输入选项 [1-4] ${C_GRAY}[默认: 1]${C_RESET}: "
+    printf " ${C_CYAN}?${C_RESET} 请输入选项 [1-5] ${C_GRAY}[默认: 1]${C_RESET}: "
     ui_read PROTO_CHOICE
     PROTO_CHOICE=$(echo "$PROTO_CHOICE" | tr -d '[:space:]')
     PROTO_CHOICE="${PROTO_CHOICE:-1}"
@@ -33,8 +34,11 @@ while true; do
         PROTO_NAME="vless_reality"
         PROTO_TITLE="VLESS + Reality"
         break
+    elif [ "$PROTO_CHOICE" = "5" ]; then
+        do_uninstall
+        exit 0
     fi
-    ui_warn "选项无效，请输入 1-4！"
+    ui_warn "选项无效，请输入 1-5！"
 done
 
 # 2. 域名输入与已有证书复用判断
