@@ -65,3 +65,4 @@ printf "${C_CYAN}----------------------------------------------------------${C_R
 printf "管理服务命令: ${C_YELLOW}%s${C_RESET}\n" "${SVC_MGR_CMD}"
 printf "日志文件路径: ${C_YELLOW}%s${C_RESET}\n" "${LOG_PATH}"
 printf "${C_CYAN}==========================================================${C_RESET}\n"
+post_install_prompt

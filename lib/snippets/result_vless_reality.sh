@@ -91,3 +91,4 @@ printf "${C_CYAN}==========================================================${C_R
 printf "管理服务命令: ${C_YELLOW}%s${C_RESET}\n" "${SVC_MGR_CMD}"
 printf "Nginx 管理:   ${C_YELLOW}systemctl/rc-service nginx {start|stop|restart|status}${C_RESET}\n"
 printf "${C_CYAN}==========================================================${C_RESET}\n"
+post_install_prompt

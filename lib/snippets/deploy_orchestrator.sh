@@ -1,4 +1,4 @@
-# ---------- 根路径全自动交互引导编排器 ----------
+# ---------- 自动化多协议节点部署向导编排器 ----------
 ui_banner "sing-box 自动化多协议节点部署向导"
 
 # 自动嗅探系统已有历史配置与证书
@@ -13,8 +13,9 @@ printf "  ${C_CYAN}2)${C_RESET} TUIC v5            ${C_GRAY}(基于 QUIC 协议�
 printf "  ${C_CYAN}3)${C_RESET} AnyTLS             ${C_GRAY}(抗 TLS-in-TLS 审查的高性能 TCP 代理)${C_RESET}\n"
 printf "  ${C_CYAN}4)${C_RESET} VLESS Reality      ${C_GRAY}(偷自己证书 + Nginx 静态网页回落伪装)${C_RESET}\n"
 printf "  ${C_CYAN}5)${C_RESET} 完全卸载与清除环境 ${C_GRAY}(停止并删除服务、配置、证书、卸载Nginx)${C_RESET}\n"
+printf "  ${C_CYAN}0)${C_RESET} ⬅️  返回主菜单     ${C_GRAY}(返回最初的主引导面板)${C_RESET}\n"
 while true; do
-    printf " ${C_CYAN}?${C_RESET} 请输入选项 [1-5] ${C_GRAY}[默认: 1]${C_RESET}: "
+    printf " ${C_CYAN}?${C_RESET} 请输入选项 [0-5] ${C_GRAY}[默认: 1]${C_RESET}: "
     ui_read PROTO_CHOICE
     PROTO_CHOICE=$(echo "$PROTO_CHOICE" | tr -d '[:space:]')
     PROTO_CHOICE="${PROTO_CHOICE:-1}"
@@ -36,9 +37,26 @@ while true; do
         break
     elif [ "$PROTO_CHOICE" = "5" ]; then
         do_uninstall
+        if [ -n "$SERVER_URL" ] && [ "$SERVER_URL" != "__SERVER_URL__" ]; then
+            printf "\n${C_CYAN}?${C_RESET} 按回车键返回主菜单，或输入 q 退出 [默认: 回车]: "
+            ui_read RET_MENU
+            RET_MENU=$(echo "$RET_MENU" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+            if [ "$RET_MENU" != "q" ]; then
+                clear 2>/dev/null || true
+                curl -fsSL "${SERVER_URL}/" | sh
+                exit 0
+            fi
+        fi
+        exit 0
+    elif [ "$PROTO_CHOICE" = "0" ]; then
+        if [ -n "$SERVER_URL" ] && [ "$SERVER_URL" != "__SERVER_URL__" ]; then
+            ui_info "正在返回主引导菜单..."
+            clear 2>/dev/null || true
+            curl -fsSL "${SERVER_URL}/" | sh
+        fi
         exit 0
     fi
-    ui_warn "选项无效，请输入 1-5！"
+    ui_warn "选项无效，请输入 0-5！"
 done
 
 # 2. 域名输入与已有证书复用判断

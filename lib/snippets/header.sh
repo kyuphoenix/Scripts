@@ -27,6 +27,7 @@ INSTALL_DIR="/usr/local/bin"
 CONF_DIR="/etc/sing-box"
 CERT_DIR="/etc/sing-box/cert"
 WORK_DIR="/root/sb_download_cache"
+SERVER_URL="${SERVER_URL:-__SERVER_URL__}"
 
 # 异常退出与清理 Trap
 on_exit() {
@@ -79,6 +80,20 @@ ui_warn() {
 
 ui_error() {
     printf "  ${C_RED}❌ %s${C_RESET}\n" "$1"
+}
+
+# 部署完成后的返回或退出提示
+post_install_prompt() {
+    if [ -n "$SERVER_URL" ] && [ "$SERVER_URL" != "__SERVER_URL__" ]; then
+        printf "\n${C_CYAN}?${C_RESET} 按回车键返回主菜单，或输入 q 退出 [默认: 回车]: "
+        ui_read FINISH_CHOICE
+        FINISH_CHOICE=$(echo "$FINISH_CHOICE" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+        if [ "$FINISH_CHOICE" != "q" ]; then
+            clear 2>/dev/null || true
+            curl -fsSL "${SERVER_URL}/" | sh
+            exit 0
+        fi
+    fi
 }
 
 # ---------- 探测系统已有历史配置与证书 ----------
