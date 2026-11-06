@@ -5,9 +5,9 @@ mkdir -p "$CONF_DIR"
 cat << EOF > "$CONF_DIR/config.json"
 {
   "log": {
-    "disabled": true,
-    "level": "fatal",
-    "timestamp": false
+    "disabled": false,
+    "level": "info",
+    "timestamp": true
   },
   "inbounds": [
     {
