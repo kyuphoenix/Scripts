@@ -14,7 +14,9 @@ detect_system_status() {
 
     if [ "$SB_INSTALLED" -eq 1 ]; then
         SB_VERSION=$("$SB_BIN" version 2>/dev/null | head -n 1 | awk '{print $3}' || true)
-        [ -z "$SB_VERSION" ] && SB_VERSION="已安装"
+        if [ -z "$SB_VERSION" ]; then
+            SB_VERSION="已安装"
+        fi
     fi
 
     # 2. 检测服务运行状态与进程信息
@@ -45,7 +47,9 @@ detect_system_status() {
     if [ -n "$PIDS" ]; then
         SB_RUNNING=1
         SB_PID=$(echo "$PIDS" | awk '{print $1}')
-        [ -z "$SB_SERVICE_STATUS" ] && SB_SERVICE_STATUS="进程运行中 (PID: $SB_PID)"
+        if [ -z "$SB_SERVICE_STATUS" ]; then
+            SB_SERVICE_STATUS="进程运行中 (PID: $SB_PID)"
+        fi
         
         # 尝试获取 CPU 与内存占用
         if command -v ps >/dev/null 2>&1 && [ -n "$SB_PID" ]; then
@@ -53,8 +57,8 @@ detect_system_status() {
             if [ -n "$CPU_MEM" ]; then
                 P_CPU=$(echo "$CPU_MEM" | awk '{print $1}')
                 P_MEM=$(echo "$CPU_MEM" | awk '{print $2}')
-                [ -n "$P_CPU" ] && SB_CPU="${P_CPU}%"
-                [ -n "$P_MEM" ] && SB_MEM="${P_MEM}%"
+                [ -n "$P_CPU" ] && SB_CPU="${P_CPU}%" || true
+                [ -n "$P_MEM" ] && SB_MEM="${P_MEM}%" || true
             fi
         fi
     elif [ -z "$SB_SERVICE_STATUS" ]; then
@@ -89,10 +93,14 @@ detect_system_status() {
         fi
 
         P_VAL=$(grep -oE '"listen_port": *[0-9]+' "$CONF_FILE" 2>/dev/null | head -n 1 | awk '{print $NF}' || true)
-        [ -n "$P_VAL" ] && ACTIVE_PORT="$P_VAL"
+        if [ -n "$P_VAL" ]; then
+            ACTIVE_PORT="$P_VAL"
+        fi
 
         D_VAL=$(grep -oE '"server_name": *"[^"]+"' "$CONF_FILE" 2>/dev/null | head -n 1 | cut -d'"' -f4 || true)
-        [ -n "$D_VAL" ] && ACTIVE_DOMAIN="$D_VAL"
+        if [ -n "$D_VAL" ]; then
+            ACTIVE_DOMAIN="$D_VAL"
+        fi
 
         ACTIVE_PASSWORD=$(grep -oE '"password": *"[^"]+"' "$CONF_FILE" 2>/dev/null | head -n 1 | cut -d'"' -f4 || true)
         ACTIVE_UUID=$(grep -oE '"uuid": *"[^"]+"' "$CONF_FILE" 2>/dev/null | head -n 1 | cut -d'"' -f4 || true)
@@ -113,8 +121,14 @@ detect_system_status() {
     CERT_FILE="$CERT_DIR/server.crt"
     if [ -s "$CERT_FILE" ] && command -v openssl >/dev/null 2>&1; then
         CERT_DOMAIN=$(openssl x509 -noout -text -in "$CERT_FILE" 2>/dev/null | grep -oE "DNS:[^ ,]+" | head -n 1 | cut -d: -f2 || true)
-        [ -z "$CERT_DOMAIN" ] && CERT_DOMAIN=$(openssl x509 -noout -subject -in "$CERT_FILE" 2>/dev/null | sed -n 's/.*CN = //p' | cut -d/ -f1 || true)
-        [ -z "$ACTIVE_DOMAIN" -o "$ACTIVE_DOMAIN" = "未知" ] && [ -n "$CERT_DOMAIN" ] && ACTIVE_DOMAIN="$CERT_DOMAIN"
+        if [ -z "$CERT_DOMAIN" ]; then
+            CERT_DOMAIN=$(openssl x509 -noout -subject -in "$CERT_FILE" 2>/dev/null | sed -n 's/.*CN = //p' | cut -d/ -f1 || true)
+        fi
+        if [ -z "$ACTIVE_DOMAIN" ] || [ "$ACTIVE_DOMAIN" = "未知" ]; then
+            if [ -n "$CERT_DOMAIN" ]; then
+                ACTIVE_DOMAIN="$CERT_DOMAIN"
+            fi
+        fi
 
         EXP_DATE_STR=$(openssl x509 -noout -enddate -in "$CERT_FILE" 2>/dev/null | cut -d= -f2 || true)
         CERT_EXPIRY="$EXP_DATE_STR"

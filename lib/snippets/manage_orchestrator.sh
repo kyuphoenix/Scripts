@@ -302,11 +302,14 @@ while true; do
             # 6. 一键完全卸载与清除环境
             clear 2>/dev/null || true
             do_uninstall
-            if [ -n "$SERVER_URL" ] && [ "$SERVER_URL" != "__SERVER_URL__" ]; then
+            if [ -n "$SERVER_URL" ]; then
                 printf "\n${C_CYAN}?${C_RESET} 按回车键返回主引导菜单，或输入 q 退出 [默认: 回车]: "
                 ui_read RET_MENU
                 RET_MENU=$(echo "$RET_MENU" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
                 if [ "$RET_MENU" != "q" ]; then
+                    if [ "$ROOT_MENU_ACTIVE" = "1" ]; then
+                        exit 0
+                    fi
                     clear 2>/dev/null || true
                     curl -fsSL "${SERVER_URL}/" | sh
                     exit 0
@@ -317,7 +320,10 @@ while true; do
 
         0)
             # 0. 返回主引导菜单
-            if [ -n "$SERVER_URL" ] && [ "$SERVER_URL" != "__SERVER_URL__" ]; then
+            if [ "$ROOT_MENU_ACTIVE" = "1" ]; then
+                exit 0
+            fi
+            if [ -n "$SERVER_URL" ]; then
                 ui_info "正在返回主引导菜单..."
                 clear 2>/dev/null || true
                 curl -fsSL "${SERVER_URL}/" | sh
